@@ -1,25 +1,10 @@
 #pragma once
 
+#include "stack.h"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
-
-class Stack
-{
-private:
-	std::vector<int> m_Buffer;
-	int m_StackPointer;
-	uint m_StackSize;
-public:
-	Stack(uint size);
-
-	void log() const;
-	int top() const;
-	int size() const { return m_StackPointer + 1; }
-
-	void push(int number);
-	int pop();
-};
 
 class Interpreter
 {
@@ -28,8 +13,9 @@ private:
 	std::unordered_map<std::string, int> m_Label_Tracker;
 	std::unordered_map<std::string, int> m_Variables;
 	Stack m_Stack;
+	Logger *m_Logger;
 public:
-	Interpreter(uint stackSize);
+	Interpreter(unsigned int stackSize, Logger* logger);
 	void readFile(const std::string &file);
 	void run();
 private:

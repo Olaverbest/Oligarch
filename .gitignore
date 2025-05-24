@@ -4,6 +4,7 @@
 
 projects/
 node_modules/
+.vscode/
 
 oligarch
 oligarch.exe

@@ -4,45 +4,12 @@
 #include <fstream>
 #include <sstream>
 
-Stack::Stack(uint size) : m_StackSize(size), m_Buffer(size, 0), m_StackPointer(-1) {}
-
-void Stack::log() const {
-	std::cout << "Stack contents (bottom -> top): ";
-	if (m_StackPointer < 0) std::cout << "<Empty>";
-	else for (int i = 0; i <= m_StackPointer; i++) std::cout << m_Buffer[i] << " ";
-	std::cout << std::endl;
-}
-
-int Stack::top() const {
-	if (m_StackPointer < 0) {
-		std::cerr << "Error: Attempting to read from an empty stack!" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	return m_Buffer[m_StackPointer];
-}
-
-void Stack::push(int number) {
-	if (m_StackPointer + 1 >= m_StackSize) {
-		std::cerr<< "Error: Attempting to push over the stack limit of " << m_StackSize << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	m_Buffer[++m_StackPointer] = number;
-}
-
-int Stack::pop() {
-	if (m_StackPointer < 0) {
-		std::cerr<< "Error: Attempting to pop from an empty stack!" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	return m_Buffer[m_StackPointer--];
-}
-
-Interpreter::Interpreter(uint stackSize) : m_Stack(stackSize) {}
+Interpreter::Interpreter(unsigned int stackSize, Logger* logger) : m_Stack(stackSize, m_Logger), m_Logger(logger) {}
 
 void Interpreter::readFile(const std::string &file) {
 	std::ifstream infile(file);
 	if (!infile) {
-		std::cerr << "Could not open the file: " << file << std::endl;
+		m_Logger->log(LogLevel::ERROR, "Could not open the file: " + file);
 		return;
 	}
 
@@ -87,7 +54,7 @@ int Interpreter::resolveValue(const std::string& token) const {
 	try {
 		return std::stoi(token);
 	} catch (std::invalid_argument&) {
-		std::cerr << "Error: Could not resolve value for token: " << token << std::endl;
+		m_Logger->log(LogLevel::ERROR, "Could not resolve value for token: " + token);
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -98,7 +65,7 @@ void Interpreter::run() {
 		std::string opcode = m_Program[program_counter];
 		
 		if (opcode == "exit") {
-			//std::cout << "OPCODE: exit, PROGAM COUNTER: " << program_counter << std::endl;
+			m_Logger->log(LogLevel::DEBUG, "OPCODE: exit, PROGRAM COUNTER " + std::to_string(program_counter));
 			break;
 		}
 
@@ -107,7 +74,7 @@ void Interpreter::run() {
 }
 
 void Interpreter::executeInstruction(std::string opcode, size_t& program_counter) {
-	//std::cout << "OPCODE: " << opcode << ", PROGRAM COUNTER: " << program_counter << std::endl;
+	m_Logger->log(LogLevel::DEBUG, "OPCODE: " + opcode + ", PROGRAM COUNTER: " + std::to_string(program_counter));
 	program_counter++;
 
 	if (opcode == "push") {
@@ -127,7 +94,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 		}
 
 		m_Variables[var_name] = value;
-		//std::cout << "Variable '" << var_name << "' set to " << value << std::endl;
+		m_Logger->log(LogLevel::DEBUG, "Variable '" + var_name + "' set to " + std::to_string(value));
 
 	} else if (opcode == "get") {
 		m_Stack.push(m_Variables[m_Program[program_counter++]]);
@@ -154,7 +121,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 
 	} else if (opcode == "add") {
 		if (m_Stack.size() < 2) {
-			std::cerr << "Error: not enought values on stack for arithmetic operation" << std::endl;
+			m_Logger->log(LogLevel::ERROR, "Not enought values on stack for arithmetic operation");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -164,7 +131,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 
 	} else if (opcode == "sub") {
 		if (m_Stack.size() < 2) {
-			std::cerr << "Error: not enought values on stack for arithmetic operation" << std::endl;
+			m_Logger->log(LogLevel::ERROR, "Not enought values on stack for arithmetic operation");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -174,7 +141,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 
 	} else if (opcode == "mul") {
 		if (m_Stack.size() < 2) {
-			std::cerr << "Error: not enought values on stack for arithmetic operation" << std::endl;
+			m_Logger->log(LogLevel::ERROR, "Not enought values on stack for arithmetic operation");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -184,7 +151,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 
 	} else if (opcode == "div") {
 		if (m_Stack.size() < 2) {
-			std::cerr << "Error: not enought values on stack for arithmetic operation" << std::endl;
+			m_Logger->log(LogLevel::ERROR, "Not enought values on stack for arithmetic operation");
 			std::exit(EXIT_FAILURE);
 		}
 
@@ -195,7 +162,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 	} else if (opcode == "jmp") {
 		std::string label = m_Program[program_counter++];
 		if (!m_Label_Tracker.count(label)) {
-			std::cerr << "Error: Label: " << label << " not found!" << std::endl;
+			m_Logger->log(LogLevel::ERROR, "Label: " + label + " not found!");
 			std::exit(EXIT_FAILURE);
 		}
 		program_counter = m_Label_Tracker[label];
@@ -206,11 +173,11 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 		std::string label = m_Program[program_counter++];
 
 		if (!m_Label_Tracker.count(label)) {
-			std::cerr << "Error: Label: " << label << " not found!" << std::endl;
+			m_Logger->log(LogLevel::ERROR, "Label: " + label + " not found!");
 			std::exit(EXIT_FAILURE);
 		}
 
-		//std::cout << "CMP: stack top = " << top << ", compare to = " << cmp << std::endl;
+		m_Logger->log(LogLevel::DEBUG, "CMP: stack top = " + std::to_string(top) + ", compare to =" + std::to_string(cmp));
 
 		if ((opcode == "jme" && top == cmp) ||
 			(opcode == "jmg" && top > cmp) ||
