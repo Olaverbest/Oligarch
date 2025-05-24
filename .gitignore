@@ -1,0 +1,9 @@
+*.o
+*.log
+*.tmp
+
+projects/
+node_modules/
+
+oligarch
+oligarch.exe
