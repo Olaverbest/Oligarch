@@ -65,7 +65,7 @@ void Interpreter::run() {
 		std::string opcode = m_Program[program_counter];
 		
 		if (opcode == "exit") {
-			m_Logger->log(LogLevel::DEBUG, "OPCODE: exit, PROGRAM COUNTER " + std::to_string(program_counter));
+			m_Logger->log(LogLevel::DEBUG, "OPCODE: exit, PROGRAM COUNTER: " + std::to_string(program_counter));
 			break;
 		}
 
@@ -177,7 +177,7 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			std::exit(EXIT_FAILURE);
 		}
 
-		m_Logger->log(LogLevel::DEBUG, "CMP: stack top = " + std::to_string(top) + ", compare to =" + std::to_string(cmp));
+		m_Logger->log(LogLevel::DEBUG, "CMP: stack top = " + std::to_string(top) + ", compare to = " + std::to_string(cmp));
 
 		if ((opcode == "jme" && top == cmp) ||
 			(opcode == "jmg" && top > cmp) ||

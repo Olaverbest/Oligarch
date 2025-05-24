@@ -5,7 +5,7 @@
 // Or you replace it with a file that exists on your machine.
 
 int main(int argc, char* argv[]) {
-	Logger logger(true, "projects/output.log");
+	Logger logger(true, "../projects/output.log");
 
 	if (argc < 2) {
 		logger.log(LogLevel::ERROR, "Usage: ./oligarch <filename>.oli");

@@ -4,7 +4,7 @@ Logger::Logger(bool consoleOutput, const std::string& logPath)
 	: m_ConsoleOutput(consoleOutput) {
 	if (!logPath.empty()) {
 		m_File.open(logPath);
-		if (!m_File.is_open()) std::cerr << "Logger failed to open file: " << logPath << std::endl;
+		if (!m_File.is_open()) std::cerr << "[Error] Logger failed to open file: " << logPath << std::endl;
 	}
 }
 
