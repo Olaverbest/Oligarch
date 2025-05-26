@@ -35,11 +35,11 @@ void Interpreter::readFile(const std::string &file) {
 		std::string part;
 		while (iss >> part) {
 			if (part.front() == '"') {
-				std::string quoted = part;
-				while (quoted.back() != '"' && iss >> part) {
-					quoted += " " + part;
+				std::string string_literal = part;
+				while (string_literal.back() != '"' && iss >> part) {
+					string_literal += " " + part;
 				}
-				m_Program.push_back(quoted);
+				m_Program.push_back(string_literal);
 			} else {
 				m_Program.push_back(part);
 			}
@@ -49,10 +49,14 @@ void Interpreter::readFile(const std::string &file) {
 	}
 }
 
-int Interpreter::resolveValue(const std::string& token) const {
+Value Interpreter::resolveValue(const std::string& token) const {
 	if (m_Variables.count(token)) return m_Variables.at(token);
+
+	if (token.front() == '"' && token.back() == '"')
+		return Value(token.substr(1, token.size() - 2));
+
 	try {
-		return std::stoi(token);
+		return Value(std::stoi(token));
 	} catch (std::invalid_argument&) {
 		m_Logger->log(LogLevel::ERROR, "Could not resolve value for token: " + token);
 		std::exit(EXIT_FAILURE);
@@ -86,7 +90,8 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 	} else if (opcode == "set") {
 		std::string var_name = m_Program[program_counter++];
 		std::string value_token = m_Program[program_counter++];
-		int value;
+
+		Value value;
 		if (value_token == "pop") {
 			value = m_Stack.pop();
 		} else {
@@ -94,7 +99,8 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 		}
 
 		m_Variables[var_name] = value;
-		m_Logger->log(LogLevel::DEBUG, "Variable '" + var_name + "' set to " + std::to_string(value));
+		if (value.type == ValueType::Int) m_Logger->log(LogLevel::DEBUG, "Variable '" + var_name + "' set to " + std::to_string(value.asInt()));
+		else if (value.type == ValueType::String) m_Logger->log(LogLevel::DEBUG, "Variable '" + var_name + "' set to " + value.asString());
 
 	} else if (opcode == "get") {
 		m_Stack.push(m_Variables[m_Program[program_counter++]]);
@@ -107,17 +113,30 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 
 		if (arg.front() == '"' && arg.back() == '"') {
 			std::cout << arg.substr(1, arg.size() - 2) << std::endl;
+
 		} else if (arg == "pop") {
-			std::cout << m_Stack.top() << std::endl;
-			m_Stack.pop();
+			Value val = m_Stack.pop();
+			if (val.type == ValueType::Int) std::cout << val.asInt() << std::endl;
+			else if (val.type == ValueType::String) std::cout << val.asString() << std::endl;
+			else std::cout << "<Unknown>" << std::endl;
+
 		} else {
-			std::cout << arg << std::endl;
+			Value val = resolveValue(arg);
+			if (val.type == ValueType::Int) std::cout << val.asInt() << std::endl;
+			else if (val.type == ValueType::String) std::cout << val.asString() << std::endl;
 		}
 
 	} else if (opcode == "read") {
-		int number;
-		std::cin >> number;
-		m_Stack.push(number);
+		std::string input;
+		std::getline(std::cin, input);
+
+		try {
+			int number = std::stoi(input);
+			m_Stack.push(Value(number));
+		} catch(...) {
+			m_Stack.push(Value(input));
+		}
+		
 
 	} else if (opcode == "add") {
 		if (m_Stack.size() < 2) {
@@ -125,9 +144,15 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			std::exit(EXIT_FAILURE);
 		}
 
-		int a = m_Stack.pop();
-		int b = m_Stack.pop();
-		m_Stack.push(a + b);
+		Value a = m_Stack.pop();
+		Value b = m_Stack.pop();
+
+		if (a.type != ValueType::Int || b.type != ValueType::Int) {
+			m_Logger->log(LogLevel::ERROR, "add: operands must be integers");
+			std::exit(EXIT_FAILURE);
+		}
+
+		m_Stack.push(Value(a.asInt() + b.asInt()));
 
 	} else if (opcode == "sub") {
 		if (m_Stack.size() < 2) {
@@ -135,9 +160,15 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			std::exit(EXIT_FAILURE);
 		}
 
-		int a = m_Stack.pop();
-		int b = m_Stack.pop();
-		m_Stack.push(b - a);
+		Value a = m_Stack.pop();
+		Value b = m_Stack.pop();
+
+		if (a.type != ValueType::Int || b.type != ValueType::Int) {
+			m_Logger->log(LogLevel::ERROR, "sub: operands must be integers");
+			std::exit(EXIT_FAILURE);
+		}
+
+		m_Stack.push(Value(b.asInt() - a.asInt()));
 
 	} else if (opcode == "mul") {
 		if (m_Stack.size() < 2) {
@@ -145,9 +176,15 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			std::exit(EXIT_FAILURE);
 		}
 
-		int a = m_Stack.pop();
-		int b = m_Stack.pop();
-		m_Stack.push(a * b);
+		Value a = m_Stack.pop();
+		Value b = m_Stack.pop();
+
+		if (a.type != ValueType::Int || b.type != ValueType::Int) {
+			m_Logger->log(LogLevel::ERROR, "div: operands must be integers");
+			std::exit(EXIT_FAILURE);
+		}
+
+		m_Stack.push(Value(a.asInt() * b.asInt()));
 
 	} else if (opcode == "div") {
 		if (m_Stack.size() < 2) {
@@ -155,9 +192,15 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			std::exit(EXIT_FAILURE);
 		}
 
-		int a = m_Stack.pop();
-		int b = m_Stack.pop();
-		m_Stack.push(a / b);
+		Value a = m_Stack.pop();
+		Value b = m_Stack.pop();
+
+		if (a.type != ValueType::Int || b.type != ValueType::Int) {
+			m_Logger->log(LogLevel::ERROR, "mul: operands must be integers");
+			std::exit(EXIT_FAILURE);
+		}
+
+		m_Stack.push(Value(a.asInt() / b.asInt()));
 		
 	} else if (opcode == "jmp") {
 		std::string label = m_Program[program_counter++];
@@ -168,8 +211,8 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 		program_counter = m_Label_Tracker[label];
 		
 	} else if (opcode == "jme" || opcode == "jmg" || opcode == "jml" || opcode == "jne") {
-		int top = m_Stack.top();
-		int cmp = resolveValue(m_Program[program_counter++]);
+		Value top = m_Stack.top();
+		Value cmp = resolveValue(m_Program[program_counter++]);
 		std::string label = m_Program[program_counter++];
 
 		if (!m_Label_Tracker.count(label)) {
@@ -177,12 +220,12 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			std::exit(EXIT_FAILURE);
 		}
 
-		m_Logger->log(LogLevel::DEBUG, "CMP: stack top = " + std::to_string(top) + ", compare to = " + std::to_string(cmp));
+		m_Logger->log(LogLevel::DEBUG, "CMP: stack top = " + top.asString() + ", compare to = " + cmp.asString());
 
-		if ((opcode == "jme" && top == cmp) ||
-			(opcode == "jmg" && top > cmp) ||
-			(opcode == "jml" && top < cmp) ||
-			(opcode == "jne" && top != cmp)) {
+		if ((opcode == "jme" && top.asInt() == cmp.asInt()) ||
+			(opcode == "jmg" && top.asInt() > cmp.asInt()) ||
+			(opcode == "jml" && top.asInt() < cmp.asInt()) ||
+			(opcode == "jne" && top.asInt() != cmp.asInt())) {
 			program_counter = m_Label_Tracker[label];
 		}
 		m_Stack.pop();

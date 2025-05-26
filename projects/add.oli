@@ -1,0 +1,8 @@
+write "First number to add?"
+read
+write "Second numer to add?"
+read
+add
+write "The addition comes to: "
+write pop
+exit

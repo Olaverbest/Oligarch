@@ -1,0 +1,23 @@
+write "How many times should this loop?"
+read
+set max pop		; Store user input in "max"
+
+set i 1			; Initialize counter
+get max			; Gets max without filling the stack
+
+loop:
+get i			; Stack: [max, i]
+jme max done	; Compare i (top) to max (next)
+
+get i
+write pop		; Print i (consumes from stack)
+
+get i			; Push i for incrementing
+push 1
+add
+set i pop		; Update i = i + 1
+jmp loop
+
+done:
+write pop
+exit

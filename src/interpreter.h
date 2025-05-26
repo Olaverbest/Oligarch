@@ -11,7 +11,7 @@ class Interpreter
 private:
 	std::vector<std::string> m_Program;
 	std::unordered_map<std::string, int> m_Label_Tracker;
-	std::unordered_map<std::string, int> m_Variables;
+	std::unordered_map<std::string, Value> m_Variables;
 	Stack m_Stack;
 	Logger *m_Logger;
 public:
@@ -19,6 +19,6 @@ public:
 	void readFile(const std::string &file);
 	void run();
 private:
-	int resolveValue(const std::string& token) const;
+	Value resolveValue(const std::string& token) const;
 	void executeInstruction(std::string opcode, size_t& program_counter);
 };
