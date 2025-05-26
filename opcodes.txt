@@ -1,16 +1,19 @@
-push value 					// Inserts [value] into top of stack.
-pop 						// Pops top of stack.
-set [var_name] [value] 		// Creates a variable with the name [var_name] and value as [value]. If set pop it sets [var_names] value as the top of stack and pops it.
-get [var_name]				// Inserts [var_names] value into top of stack.
-log							// Writes out the current entire stack.
-write [message] 			// Writes [message] to the screen, or if write pop it writes out the top of stack and pops it.
-read						// Awaits a user input in the form of an integer, and pushes it to top of stack.
-add							// Adds the two numbers at the top of the stack, a+b.
-sub							// Subtracts the two numbers at the top of the stack, b-a.
-mul							// Multiplies the two numbers at the top of the stack, a*b.
-div 						// Divides the  numbers at the top of the stack, a/b.
-jmp	[label]					// Jumps to [label]
-jme [value] [label]			// Jumps to [label] if top of stack is equal to [value]. Also pops the top of stack.
-jmg [value] [label]			// Jumps to [label] if top of stack is greater than [value]. Also pops the top of stack.
-jml [value] [label]			// Jumps to [label] if top of stack is less than [value]. Also pops the top of stack.
-jne [value] [label]			// Jumps to [label] if top of stack isn't equal to [value]. Also pops the top of stack.
+push [arg] 									// Inserts argument [arg] into top of stack.
+pop 										// Pops top of stack.
+set [var_name] [arg] 						// Creates a variable with the name [var_name] and an argument [arg]. If set pop it sets [var_names] arg as the top of stack and pops it.
+get [var_name]								// Inserts [var_names] value into top of stack.
+log											// Writes out the current entire stack.
+write [message] 							// Writes [message] to the screen, or if write pop it writes out the top of stack and pops it.
+read										// Awaits a user input in the form of an integer, and pushes it to top of stack.
+add											// Adds the two numbers at the top of the stack, a+b.
+sub											// Subtracts the two numbers at the top of the stack, b-a.
+mul											// Multiplies the two numbers at the top of the stack, a*b.
+div 										// Divides the  numbers at the top of the stack, a/b.
+jmp	[label]									// Jumps to [label]
+jme [value] [label]							// Jumps to [label] if top of stack is equal to [value]. Also pops the top of stack.
+jmg [value] [label]							// Jumps to [label] if top of stack is greater than [value]. Also pops the top of stack.
+jml [value] [label]							// Jumps to [label] if top of stack is less than [value]. Also pops the top of stack.
+jne [value] [label]							// Jumps to [label] if top of stack isn't equal to [value]. Also pops the top of stack.
+func [function_name]([var1] [var2]...)		// Creates a function [function_name] with [var1] and [var2] as variables for use.
+ret											// Ends the function and goes back to where the function was called.
+call [function_name]([var1] [var2]...)		// Jumps to a function [function_name] using [var1] and [var2] as values

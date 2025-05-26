@@ -1,0 +1,22 @@
+write "What is your name?"
+read
+set test pop
+call add(7 -10)
+call greet(test "Oranges")
+exit
+
+func add(x y)
+get x
+get y
+add
+write pop
+ret
+
+func greet(yname mname)
+write "Nice to meet you,"
+get yname
+write pop
+write "My name is"
+get mname
+write pop
+ret

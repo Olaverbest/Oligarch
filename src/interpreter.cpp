@@ -30,6 +30,34 @@ void Interpreter::readFile(const std::string &file) {
 			continue;
 		}
 
+		// Check for function
+		if (line.substr(0, 5) == "func ") {
+			// Remove "func " and split the rest
+			auto signature = line.substr(5);
+			auto parenOpen = signature.find('(');
+			auto parenClose = signature.find(')');
+
+			std::string function_name = signature.substr(0, parenOpen);
+			std::string parameter_list = signature.substr(parenOpen + 1, parenClose - parenOpen- 1);
+
+			// Trim function name
+			function_name.erase(0, function_name.find_first_not_of(" \t\r\n"));
+			function_name.erase(function_name.find_last_not_of(" \t\r\n") + 1);
+
+			std::vector<std::string> parameters;
+			std::istringstream paramStream(parameter_list);
+			std::string param;
+			
+			while (paramStream >> param)
+				parameters.push_back(param);
+			
+			// Track label and function parameters
+			m_Label_Tracker[function_name] = m_Program.size();
+			m_Logger->log(LogLevel::DEBUG, "Registered function: " + function_name + " with params: " + std::to_string(parameters.size()));
+			m_FunctionParameters[function_name] = parameters;
+			continue;
+		}
+
 		// Split line into parts
 		std::istringstream iss(line);
 		std::string part;
@@ -137,6 +165,59 @@ void Interpreter::executeInstruction(std::string opcode, size_t& program_counter
 			m_Stack.push(Value(input));
 		}
 		
+	} else if (opcode == "call") {
+		std::string callTarget = m_Program[program_counter++];
+
+		while (callTarget.find(')') == std::string::npos && program_counter < m_Program.size()) callTarget += " " + m_Program[program_counter++];
+
+		auto lparen = callTarget.find('(');
+		auto rparen = callTarget.find(')');
+
+		std::string function_name = callTarget.substr(0, lparen);
+		std::string argument_string = callTarget.substr(lparen + 1, rparen - lparen - 1);
+
+		std::istringstream argStream(argument_string);
+		std::vector<Value> args;
+		std::string arg;
+
+		while (argStream >> arg) {
+			args.push_back(resolveValue(arg));
+		}
+
+		// Lookup parameter names
+		if (!m_FunctionParameters.count(function_name)) {
+			m_Logger->log(LogLevel::ERROR, "Function not defined: " + function_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		auto parameter_names = m_FunctionParameters[function_name];
+		if (args.size() != parameter_names.size()) {
+			m_Logger->log(LogLevel::ERROR, "Argument count mismatch for function: " + function_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		m_Stack.push(program_counter); // Maybe change so you can take values on the stack out of function.
+
+		// Set function variables
+		for (size_t i = 0; i < parameter_names.size(); ++i) {
+			m_Variables[parameter_names[i]] = args[i];
+		}
+
+		// Jump to function label
+		if (!m_Label_Tracker.count(function_name)) {
+			m_Logger->log(LogLevel::ERROR, "Label for function not found: " + function_name);
+			std::exit(EXIT_FAILURE);
+		}
+
+		program_counter = m_Label_Tracker[function_name];
+
+	} else if (opcode == "ret") {
+		if (m_Stack.size() < 0) {
+			m_Logger->log(LogLevel::ERROR, "Stack underflow on return from function");
+			std::exit(EXIT_FAILURE);
+		}
+		program_counter = static_cast<size_t>(m_Stack.top().asInt()); // Maybe change so you can take values on the stack out of function.
+		m_Stack.pop();
 
 	} else if (opcode == "add") {
 		if (m_Stack.size() < 2) {

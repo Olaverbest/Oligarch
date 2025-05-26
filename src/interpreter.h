@@ -11,6 +11,7 @@ class Interpreter
 private:
 	std::vector<std::string> m_Program;
 	std::unordered_map<std::string, int> m_Label_Tracker;
+	std::unordered_map<std::string, std::vector<std::string>> m_FunctionParameters;
 	std::unordered_map<std::string, Value> m_Variables;
 	Stack m_Stack;
 	Logger *m_Logger;
